@@ -1,48 +1,48 @@
 """
 Database Schemas
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+UNO Multiplayer Game schemas using Pydantic models.
+Each Pydantic model corresponds to a MongoDB collection (lowercased class name).
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import List, Literal, Optional, Dict, Any
 
-# Example schemas (replace with your own):
+Color = Literal["red", "yellow", "green", "blue", "wild"]
+Value = Literal[
+    "0","1","2","3","4","5","6","7","8","9",
+    "skip","reverse","draw2","wild","wild4"
+]
 
-class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+class Card(BaseModel):
+    color: Color
+    value: Value
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+class PlayerModel(BaseModel):
+    player_id: str = Field(..., description="Unique ID for the player in a room")
+    name: str
+    hand: List[Card] = []
+    is_host: bool = False
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Rules(BaseModel):
+    version: Literal["classic", "party"] = "classic"
+    stacking: bool = False
+    seven_o: bool = False
+    jump_in: bool = False
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class GameRoom(BaseModel):
+    code: str = Field(..., description="Room code, e.g., ABCD")
+    players: List[PlayerModel] = []
+    rules: Rules = Rules()
+    started: bool = False
+    direction: int = 1  # 1 clockwise, -1 counterclockwise
+    current_player_index: int = 0
+    draw_pile: List[Card] = []
+    discard_pile: List[Card] = []
+    current_color: Optional[Color] = None
+    pending_draw_count: int = 0
+    pending_draw_type: Optional[Literal["draw2","wild4"]] = None
+    winner_id: Optional[str] = None
+
+# Note: The app uses these models for validation and the database helper functions
+# from `database.py` to persist and query data.
